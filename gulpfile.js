@@ -1,7 +1,6 @@
-
-// Basics
 const gulp = require('gulp');
 const path = require('path');
+const del = require('del');
 
 // CSS
 const sass = require('gulp-sass');
@@ -13,10 +12,23 @@ const flatten = require('gulp-flatten');
 const webpack = require('webpack-stream');
 const eslint = require('gulp-eslint');
 
-const styleEntry = 'src/sass/main.scss';
-const scriptEntry = 'src/jsx/index.jsx';
-const buildPath = [__dirname, 'app', 'static', 'build'];
-const outPoint = path.join.apply(null, buildPath);
+const paths = {
+  styleEntry: 'src/sass/main.scss',
+  scriptEntry: 'src/jsx/index.jsx',
+  outPoint: path.join.apply(null, [__dirname, 'dist']),
+};
+
+const imports = {
+  sass,
+  minifyCss,
+  sourcemaps,
+  flatten,
+  webpack,
+  eslint,
+};
+
+const env = (process.env.NODE_ENV || 'development');
+const options = require(`./gulp.${env}.js`)(gulp, paths, imports);
 
 // Code Quality
 // Your editor should lint appropriately through the same .eslintrc
@@ -26,54 +38,21 @@ gulp.task('lint', () => gulp.src('src/jsx/**/*.jsx')
       .pipe(eslint.format('table', process.stderr))
       .pipe(eslint.failOnError()));
 
-gulp.task('sass', () => gulp.src(styleEntry, { base: __dirname })
-      .pipe(sourcemaps.init())
-      .pipe(sass().on('error', sass.logError))
-      .pipe(minifyCss())
-      .pipe(sourcemaps.write('.', { includeContent: false }))
-      .pipe(flatten())
-      .pipe(gulp.dest(outPoint)));
+// Delete dist/* before every build
+gulp.task('purge', () => del(['dist/*']));
 
-gulp.task('scripts', () => gulp.src(scriptEntry)
-      .pipe(webpack({
-        plugins: [
-          new webpack.webpack.optimize.UglifyJsPlugin({
-            minimize: true,
-            compress: { warnings: false },
-          }),
-        ],
-        devtool: 'source-map',
-        module: {
-          loaders: [
-            {
-              test: /\.js$/,
-              exclude: /(node_modules)/,
-              loader: 'babel-loader',
+// Sass build
+gulp.task('sass', () => options.sass());
 
-              query: {
-                presets: [
-                  [
-                    'env', { targets: { ie: 11 } },
-                  ],
-                ],
-              },
-            },
-          ],
-        },
-        output: {
-          filename: 'scripts.js',
-        },
-      }).on('error', () => { this.emit('end'); }))
-      .pipe(gulp.dest(outPoint)));
-
+// JS build
+gulp.task('scripts', () => options.scripts());
 
 // Watch Files For Changes
 gulp.task('watch', () => {
-  gulp.watch('src/jsx/**/*.js', ['lint', 'scripts', 'jsVersion']);
-  gulp.watch('src/sass/**/*.scss', ['sass', 'cssVersion']);
+  gulp.watch('src/jsx/**/*.js', ['lint', 'scripts']);
+  gulp.watch('src/sass/**/*.scss', ['sass']);
 });
 
 // Default Task
 gulp.task('default', ['build', 'watch']);
-
-gulp.task('build', ['lint', 'sass', 'scripts', 'cssVersion', 'jsVersion']);
+gulp.task('build', ['lint', 'purge', 'sass', 'scripts']); // delete only after lint is fine
