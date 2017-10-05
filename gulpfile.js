@@ -1,6 +1,7 @@
 const gulp = require('gulp');
 const path = require('path');
 const del = require('del');
+const gutil = require('gulp-util');
 
 // CSS
 const sass = require('gulp-sass');
@@ -9,7 +10,7 @@ const sourcemaps = require('gulp-sourcemaps'); // sass sourcemaps
 const flatten = require('gulp-flatten');
 
 // JS
-const webpack = require('webpack-stream');
+const webpack = require('webpack');
 const eslint = require('gulp-eslint');
 
 const paths = {
@@ -24,6 +25,7 @@ const imports = {
   sourcemaps,
   flatten,
   webpack,
+  gutil,
   eslint,
 };
 
@@ -45,14 +47,14 @@ gulp.task('purge', () => del(['dist/*']));
 gulp.task('sass', () => options.sass());
 
 // JS build
-gulp.task('scripts', () => options.scripts());
+gulp.task('webpack', callback => options.webpack(callback));
 
 // Watch Files For Changes
 gulp.task('watch', () => {
-  gulp.watch('src/jsx/**/*.jsx', ['lint', 'scripts']);
+  gulp.watch('src/jsx/**/*.jsx', ['lint', 'webpack']);
   gulp.watch('src/sass/**/*.scss', ['sass']);
 });
 
 // Default Task
 gulp.task('default', ['build', 'watch']);
-gulp.task('build', ['lint', 'purge', 'sass', 'scripts']); // delete only after lint is fine
+gulp.task('build', ['lint', 'purge', 'sass', 'webpack']); // delete only after lint is fine
