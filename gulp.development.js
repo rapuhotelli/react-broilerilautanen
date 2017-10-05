@@ -26,6 +26,9 @@ const webpackConfig = {
   output: {
     filename: 'scripts.js',
   },
+  resolve: {
+    extensions: ['', '.js', '.jsx'],
+  },
 };
 
 module.exports = (gulp, paths, imports) => ({

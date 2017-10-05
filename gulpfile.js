@@ -49,7 +49,7 @@ gulp.task('scripts', () => options.scripts());
 
 // Watch Files For Changes
 gulp.task('watch', () => {
-  gulp.watch('src/jsx/**/*.js', ['lint', 'scripts']);
+  gulp.watch('src/jsx/**/*.jsx', ['lint', 'scripts']);
   gulp.watch('src/sass/**/*.scss', ['sass']);
 });
 
